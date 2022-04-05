@@ -29,7 +29,16 @@ if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
 
 set_time_limit(0);
 
-$loader = require dirname(__DIR__).'/vendor/autoload.php';
+$autoload_locations = [
+  dirname(__DIR__) . '/vendor/autoload.php',
+  dirname(__DIR__) . '/../../autoload.php',
+];
+foreach ($autoload_locations as $autoload_location) {
+  if (file_exists($autoload_location)) {
+    $loader = require $autoload_location;
+    break;
+  }
+}
 // We must pre-load this class to prevent self-update command from breaking.
 // @see https://github.com/acquia/cli/issues/234
 $loader->loadClass('Symfony\Component\Console\Event\ConsoleTerminateEvent');
