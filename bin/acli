@@ -17,6 +17,7 @@
 namespace Acquia\Cli;
 
 use Acquia\Cli\Command\Api\ApiCommandHelper;
+use Acquia\Cli\Exception\AcquiaCliException;
 use Acquia\Cli\Helpers\LocalMachineHelper;
 use SelfUpdate\SelfUpdateCommand;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -29,20 +30,27 @@ if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
 
 set_time_limit(0);
 
-$autoload_locations = [
-  dirname(__DIR__) . '/vendor/autoload.php',
-  dirname(__DIR__) . '/../../autoload.php',
-];
-foreach ($autoload_locations as $autoload_location) {
-  if (file_exists($autoload_location)) {
-    $loader = require $autoload_location;
-    break;
+if (isset($_composer_autoload_path)) {
+  $loader = require $_composer_autoload_path;
+}
+else {
+  $autoload_locations = [
+    dirname(__DIR__) . '/vendor/autoload.php',
+    dirname(__DIR__) . '/../../autoload.php',
+  ];
+  foreach ($autoload_locations as $autoload_location) {
+    if (file_exists($autoload_location)) {
+      $loader = require $autoload_location;
+      break;
+    }
   }
+}
+if (!isset($loader)) {
+    throw new AcquiaCliException('Unable to find autoload.php');
 }
 // We must pre-load this class to prevent self-update command from breaking.
 // @see https://github.com/acquia/cli/issues/234
 $loader->loadClass('Symfony\Component\Console\Event\ConsoleTerminateEvent');
-
 $input = new ArgvInput();
 
 // On some environments (looking at you, Windows), HOME may not be set.
@@ -65,6 +73,7 @@ if (in_array($input->getFirstArgument(), ['clear-kernel-cache', 'ckc'])) {
 
 $kernel->boot();
 $container = $kernel->getContainer();
+
 if (!getenv('ACLI_REPO_ROOT')) {
   putenv("ACLI_REPO_ROOT=" . LocalMachineHelper::getProjectRoot());
 }
@@ -78,4 +87,5 @@ $application->setVersion('@package_version@');
 $helper = $container->get(ApiCommandHelper::class);
 $application->addCommands($helper->getApiCommands());
 $application->add(new SelfUpdateCommand($application->getName(), $application->getVersion(), 'acquia/cli'));
+
 $application->run($input, $output);
