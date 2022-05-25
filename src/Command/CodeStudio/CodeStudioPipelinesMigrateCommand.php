@@ -2,6 +2,7 @@
 
 namespace Acquia\Cli\Command\CodeStudio;
 
+// use Acquia\Cli\Command\CodeStudio\CodeStudioWizardCommand;
 use Acquia\Cli\Command\CommandBase;
 use Acquia\Cli\Exception\AcquiaCliException;
 use Acquia\Cli\Output\Checklist;
@@ -33,6 +34,11 @@ class CodeStudioPipelinesMigrateCommand extends CommandBase {
    * @var \Gitlab\Client
    */
   private $gitLabClient;
+
+  /**
+   * @var Acquia\Cli\Command\CodeStudio\CodeStudioWizardCommand
+   */
+  protected $wizard;
 
   /**
    * @var string
@@ -101,6 +107,7 @@ class CodeStudioPipelinesMigrateCommand extends CommandBase {
     $this->env = $this->validateEnvironment();
     $this->gitLabToken = $this->getGitLabToken($this->gitLabHost);
     $this->getGitLabClient();
+    $this->wizard = new CodeStudioWizardCommand();
     try {
       $this->gitLabAccount = $this->gitLabClient->users()->me();
     }
@@ -174,6 +181,9 @@ class CodeStudioPipelinesMigrateCommand extends CommandBase {
    * @param \Symfony\Component\Console\Input\InputInterface $input
    *
    * @return bool
+   * Instead of copying this method from the wizard file, you'd use
+   * $this->wizard->commandRequiresAuthentication($input)
+   * inside of the execute function. Same with other methods below.
    */
   protected function commandRequiresAuthentication(InputInterface $input): bool {
     return FALSE;
